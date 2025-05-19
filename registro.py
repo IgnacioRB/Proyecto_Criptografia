@@ -1,6 +1,5 @@
 import os, json, base64, uuid
 from getpass import getpass
-
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -24,6 +23,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
             private_bytes_origen = f.read()
         with open(public_src, "rb") as f:
             public_bytes = f.read()
+        print(f"[INFO] Reutilizando claves del dispositivo {did}")
     else:
         priv_key = ec.generate_private_key(ec.SECP256R1())
         public_bytes = priv_key.public_key().public_bytes(
@@ -35,12 +35,11 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
             serialization.PrivateFormat.PKCS8,
             serialization.NoEncryption(),
         )
+        print("[INFO] Generando nuevo par de claves (no había claves previas)")
 
     salt_pw, salt_pem = os.urandom(16), os.urandom(16)
-    hash_pw = PBKDF2HMAC(hashes.SHA256(), 32, salt_pw, 100_000)\
-                .derive(contrasena.encode())
-    key_pem = PBKDF2HMAC(hashes.SHA256(), 32, salt_pem, 100_000)\
-                .derive(contrasena.encode())
+    hash_pw = PBKDF2HMAC(hashes.SHA256(), 32, salt_pw, 100_000).derive(contrasena.encode())
+    key_pem = PBKDF2HMAC(hashes.SHA256(), 32, salt_pem, 100_000).derive(contrasena.encode())
 
     iv = os.urandom(12)
     ciphertext = AESGCM(key_pem).encrypt(iv, private_bytes_origen, None)
@@ -54,6 +53,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     with open(pub_path, "wb") as f:
         f.write(public_bytes)
 
+    # Asegurar que se crea usuarios.json si no existe
     usuarios = {}
     if os.path.exists("usuarios.json"):
         with open("usuarios.json", "r") as f:
@@ -76,8 +76,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     )
 
 if __name__ == "__main__":
-    usr  = input("Nombre de usuario: ").strip()
-    pwd  = getpass("Contraseña: ")
-
+    usr = input("Nombre de usuario: ").strip()
+    pwd = getpass("Contraseña: ")
     did_in = input("(Opcional) Device-ID existente (Enter para generar): ").strip() or None
     print(crear_usuario(usr, pwd, did_in))
