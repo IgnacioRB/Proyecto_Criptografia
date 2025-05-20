@@ -3,6 +3,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.exceptions import InvalidTag, InvalidSignature
+# manejo de excepciones agregadas
 
 def _derivar_llave(password: bytes, salt: bytes, iterations=100_000) -> bytes:
     kdf = PBKDF2HMAC(
