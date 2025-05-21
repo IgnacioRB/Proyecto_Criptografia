@@ -32,10 +32,7 @@ def mutua():
 
 @app.route("/pulso", methods=["POST"])
 def pulso():
-    # simula nuevo valor de pulso
     pulso = str(60 + (uuid.uuid4().int % 40)).encode()
-
-    # ECDH efímero para derivar AES key (simulación)
     priv_key = ec.generate_private_key(ec.SECP256R1())
     shared = priv_key.exchange(ec.ECDH(), priv_key.public_key())
     aes_key = HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=b"handshake data").derive(shared)
@@ -43,6 +40,26 @@ def pulso():
 
     nonce = os.urandom(12)
     mensaje = uuid.uuid4().bytes + b"||Pulso:" + pulso
+    ciphertext = aesgcm.encrypt(nonce, mensaje, None)
+
+    return jsonify({
+        "nonce": nonce.hex(),
+        "ciphertext": ciphertext.hex(),
+        "mensaje": mensaje.decode(errors="ignore")
+    })
+
+@app.route("/pasos", methods=["POST"])
+def pasos():
+    pasos = str(500 + (uuid.uuid4().int % 2000)).encode()
+    calorias = str(int(pasos.decode()) // 12).encode()
+
+    priv_key = ec.generate_private_key(ec.SECP256R1())
+    shared = priv_key.exchange(ec.ECDH(), priv_key.public_key())
+    aes_key = HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=b"handshake data").derive(shared)
+    aesgcm = AESGCM(aes_key)
+
+    nonce = os.urandom(12)
+    mensaje = uuid.uuid4().bytes + b"||Pasos:" + pasos + b",Calorias:" + calorias
     ciphertext = aesgcm.encrypt(nonce, mensaje, None)
 
     return jsonify({
