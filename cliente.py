@@ -55,14 +55,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     aes_key = HKDF(algorithm=hashes.SHA256(), length=32,
                    salt=None, info=b"handshake data").derive(shared)
-
+    
     aesgcm  = AESGCM(aes_key)
     print("✓  Clave compartida derivada, canal seguro listo")
 
-    mensaje    = uuid.uuid4().bytes + b"||Hola servidor!!"
+    # Enviar datos reales del smartwatch: pasos + calorías
+    pasos = 13
+    calorias = 1
+    mensaje = f"Pasos: {pasos}, Calorías: {calorias}".encode()
     nonce_msg  = os.urandom(12)
     ciphertext = aesgcm.encrypt(nonce_msg, mensaje, None)
-    print("[DEBUG] Longitud ciphertext:", len(ciphertext))
+
     s.sendall(nonce_msg + ciphertext)
 
     data = s.recv(2048)
@@ -75,5 +78,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             if b"||" in texto:
                 print("Respuesta del servidor:",
                       texto.split(b"||", 1)[1].decode())
+            else:
+                print("Respuesta:", texto.decode())
         except Exception as e:
             print("Error de integridad / autenticidad:", e)
