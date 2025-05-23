@@ -1,3 +1,4 @@
+# server.py  – autenticación mutua  + ECDH + AES-GCM
 import socket, os, uuid
 from getpass import getpass
 from auth_manager import cargar_usuario, verificar_password, descifrar_pem
@@ -34,6 +35,7 @@ if __name__ == "__main__":
             with conn:
                 print("[Servidor] Conexión de", addr)
 
+                # Fase 1: recibir device-id
                 device_id = conn.recv(1024).decode().strip()
                 cli_pub_path = f"keys/{device_id}_public_key.pem"
                 if not os.path.exists(cli_pub_path):
@@ -42,19 +44,22 @@ if __name__ == "__main__":
                 with open(cli_pub_path, "rb") as f:
                     cli_pub = serialization.load_pem_public_key(f.read())
 
+                # Fase 2: autenticación mutua
                 nonce_srv = uuid.uuid4().bytes
                 conn.sendall(nonce_srv)
                 firma_cli = conn.recv(256)
                 cli_pub.verify(firma_cli, nonce_srv, ec.ECDSA(hashes.SHA256()))
 
-                nonce_cli  = conn.recv(1024)
-                firma_srv  = priv_srv.sign(nonce_cli, ec.ECDSA(hashes.SHA256()))
+                nonce_cli = conn.recv(1024)
+                firma_srv = priv_srv.sign(nonce_cli, ec.ECDSA(hashes.SHA256()))
                 conn.sendall(firma_srv)
 
+                # Fase 3: ECDH efímero
                 srv_tmp_priv  = ec.generate_private_key(ec.SECP256R1())
                 srv_pub_bytes = srv_tmp_priv.public_key().public_bytes(
                     encoding=serialization.Encoding.PEM,
-                    format=serialization.PublicFormat.SubjectPublicKeyInfo)
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo
+                )
                 conn.sendall(srv_pub_bytes)
 
                 cli_pub_bytes = conn.recv(1024)
@@ -63,31 +68,27 @@ if __name__ == "__main__":
 
                 aes_key = HKDF(algorithm=hashes.SHA256(), length=32,
                                salt=None, info=b"handshake data").derive(shared)
-                print("[DEBUG] AES key servidor:", aes_key.hex())
-                aesgcm  = AESGCM(aes_key)
-                print("  · Canal seguro establecido.")
+                aesgcm = AESGCM(aes_key)
+                print("✓  Canal seguro con", device_id, "establecido")
+
+                # Fase 4: recibir mensaje cifrado
+                data = conn.recv(2048)
+                if len(data) < 12:
+                    print("[ERROR] Mensaje muy corto")
+                    continue
+
+                nonce_msg = data[:12]
+                ciphertext = data[12:]
 
                 try:
-                    conn.settimeout(2.0)
-                    data = conn.recv(2048)
-                    nonce_m, ctxt = data[:12], data[12:]
+                    texto = aesgcm.decrypt(nonce_msg, ciphertext, None)
+                    print("✓  Mensaje descifrado:", texto)
 
-                    print("[DEBUG] Longitud ciphertext recibido:", len(ctxt))
-                    print("[DEBUG] Corrompiendo ciphertext para simular ataque...")
-                    corrupt_ctxt = bytearray(ctxt)
-                    corrupt_ctxt[-1] ^= 0x01
-                    ctxt = bytes(corrupt_ctxt)
+                    respuesta = uuid.uuid4().bytes + b"||Respuesta segura recibida"
+                    nonce_resp = os.urandom(12)
+                    ctxt_resp = aesgcm.encrypt(nonce_resp, respuesta, None)
+                    conn.sendall(nonce_resp + ctxt_resp)
 
-                    msg = aesgcm.decrypt(nonce_m, ctxt, None)
-                    print("  · Mensaje:", msg.decode(errors="ignore"))
-
-                    nonce_rsp = os.urandom(12)
-                    respuesta = uuid.uuid4().bytes + b"||Hola cliente!!"
-                    ctxt_rsp  = aesgcm.encrypt(nonce_rsp, respuesta, None)
-                    conn.sendall(nonce_rsp + ctxt_rsp)
-                    print("  · Respuesta cifrada enviada.")
-
-                except InvalidTag:
-                    print("  · Error: integridad inválida (tag corrompido)")
+                except Exception as e:
+                    print("[ERROR] Falla en descifrado:", e)
                     conn.sendall(b"BAD_TAG")
-                    continue
