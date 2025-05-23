@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 import socket, os, uuid
 from getpass import getpass
 from auth_manager import cargar_usuario, verificar_password, descifrar_pem
@@ -31,7 +31,6 @@ with open(f"keys/{srv_dev_id}_public_key.pem", "rb") as f:
 HOST, PORT = "127.0.0.1", 65432
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
-
     s.sendall(device_id.encode())
 
     nonce_srv  = s.recv(1024)
@@ -56,6 +55,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     aes_key = HKDF(algorithm=hashes.SHA256(), length=32,
                    salt=None, info=b"handshake data").derive(shared)
+
     aesgcm  = AESGCM(aes_key)
     print("✓  Clave compartida derivada, canal seguro listo")
 
