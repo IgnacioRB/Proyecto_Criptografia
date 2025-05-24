@@ -1,84 +1,73 @@
 #!/usr/bin/env python3
-import socket, os, uuid
+# cliente.py – smartwatch / IoT node que se autentica con el servidor
+
+import socket
+import os
+import uuid
 from getpass import getpass
+
 from auth_manager import cargar_usuario, verificar_password, descifrar_pem
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-usuario   = input("[Cliente] Nombre de usuario/dispositivo: ")
-password  = getpass("[Cliente] Contraseña: ")
+HOST = "localhost"
+PORT = 8443
 
-data_usr  = cargar_usuario(usuario)
-if not data_usr or not verificar_password(password, data_usr):
-    print("Credenciales inválidas."); exit()
+usuario = input("Usuario: ").strip()
+contrasena = getpass("Contraseña: ")
 
-device_id = data_usr["device_id"]
-ruta_priv = f"keys/{device_id}_private_key.pem"
+usuario_data = cargar_usuario(usuario)
+if not usuario_data:
+    print("Usuario no encontrado.")
+    exit()
 
-try:
-    priv_key = descifrar_pem(usuario, password, data_usr, ruta_pem=ruta_priv)
-    print("✓  Clave privada del cliente cargada.")
-except Exception as e:
-    print("Error al abrir la clave privada:", e); exit()
+if not verificar_password(contrasena, usuario_data):
+    print("Contraseña incorrecta.")
+    exit()
 
-srv_data   = cargar_usuario("servidor")
-srv_dev_id = srv_data["device_id"]
-with open(f"keys/{srv_dev_id}_public_key.pem", "rb") as f:
-    srv_pub_key = serialization.load_pem_public_key(f.read())
+priv_key = descifrar_pem(usuario, contrasena, usuario_data)
+pub_key = priv_key.public_key()
 
-HOST, PORT = "127.0.0.1", 65432
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    s.sendall(device_id.encode())
+with socket.create_connection((HOST, PORT)) as s:
+    # se envía el ID de dispositivo
+    s.sendall(usuario_data["device_id"].encode())
 
-    nonce_srv  = s.recv(1024)
-    firma_cli  = priv_key.sign(nonce_srv, ec.ECDSA(hashes.SHA256()))
-    s.sendall(firma_cli)
+    # se recibe el nonce del servidor y su firma
+    nonce_servidor = s.recv(32)
+    firma_servidor = s.recv(64)
 
-    nonce_cli  = uuid.uuid4().bytes
-    s.sendall(nonce_cli)
-    firma_srv  = s.recv(256)
-    srv_pub_key.verify(firma_srv, nonce_cli, ec.ECDSA(hashes.SHA256()))
-    print("✓  Autenticación mutua completa")
+    # se firma el nonce del servidor
+    firma_cliente = priv_key.sign(nonce_servidor, ec.ECDSA(hashes.SHA256()))
 
-    cli_tmp_priv  = ec.generate_private_key(ec.SECP256R1())
-    cli_pub_bytes = cli_tmp_priv.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo)
-    s.sendall(cli_pub_bytes)
+    # se genera ECDH y se envía la clave pública del cliente
+    priv_dh = ec.generate_private_key(ec.SECP256R1())
+    pub_dh_bytes = priv_dh.public_key().public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    s.sendall(pub_dh_bytes)
+    s.sendall(firma_cliente)
 
-    srv_pub_bytes = s.recv(1024)
-    srv_tmp_pub   = serialization.load_pem_public_key(srv_pub_bytes)
-    shared        = cli_tmp_priv.exchange(ec.ECDH(), srv_tmp_pub)
+    # se recibe clave pública ECDH del servidor
+    pub_dh_servidor = serialization.load_pem_public_key(s.recv(2000))
 
-    aes_key = HKDF(algorithm=hashes.SHA256(), length=32,
-                   salt=None, info=b"handshake data").derive(shared)
-    
-    aesgcm  = AESGCM(aes_key)
-    print("✓  Clave compartida derivada, canal seguro listo")
+    # derivar clave compartida
+    shared_key = priv_dh.exchange(ec.ECDH(), pub_dh_servidor)
+    aes_key = HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=None,
+        info=b"handshake data"
+    ).derive(shared_key)
 
-    # Enviar datos reales del smartwatch: pasos + calorías
-    pasos = 13
-    calorias = 1
-    mensaje = f"Pasos: {pasos}, Calorías: {calorias}".encode()
-    nonce_msg  = os.urandom(12)
-    ciphertext = aesgcm.encrypt(nonce_msg, mensaje, None)
+    mensaje = b"Hola servidor, soy el smartwatch"
+    nonce = os.urandom(12)
+    aesgcm = AESGCM(aes_key)
+    cifrado = aesgcm.encrypt(nonce, mensaje, None)
 
-    s.sendall(nonce_msg + ciphertext)
+    s.sendall(nonce + cifrado)
 
-    data = s.recv(2048)
-    if len(data) < 12:
-        print("No se recibió respuesta")
-    else:
-        nonce_r, ctxt_r = data[:12], data[12:]
-        try:
-            texto = aesgcm.decrypt(nonce_r, ctxt_r, None)
-            if b"||" in texto:
-                print("Respuesta del servidor:",
-                      texto.split(b"||", 1)[1].decode())
-            else:
-                print("Respuesta:", texto.decode())
-        except Exception as e:
-            print("Error de integridad / autenticidad:", e)
+    respuesta = s.recv(1024)
+    print("Respuesta segura recibida:", respuesta.decode(errors="ignore"))
