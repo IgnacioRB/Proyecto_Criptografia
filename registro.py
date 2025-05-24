@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# registro.py  ·  crea usuario, claves ECC y guarda device_id (manual u opcional)
+
 import os, json, base64, uuid
 from getpass import getpass
 
@@ -6,10 +9,22 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+
 def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
                   reutilizar_claves=True) -> str:
+    """
+    Si reutilizar_claves=True y existe keys/<device_id>_private_key.pem
+    se cargan esas claves; de lo contrario se crean de cero.
+    """
+
+    # ─────────────────────────────────────────────
+    # 1) Device-ID: recibido o generado
+    # ─────────────────────────────────────────────
     did = device_id.strip() if device_id else str(uuid.uuid4())
 
+    # ─────────────────────────────────────────────
+    # 2) ¿Ya hay clave para este dispositivo?
+    # ─────────────────────────────────────────────
     private_src = f"keys/{did}_private_key.pem"
     public_src  = f"keys/{did}_public_key.pem"
 
@@ -20,6 +35,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     )
 
     if usar_existentes:
+        # ----- cargar la pareja emitida por la RA -----
         with open(private_src, "rb") as f:
             private_bytes_origen = f.read()
 
@@ -29,6 +45,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
         print(f"[INFO] Reutilizando claves del dispositivo {did}")
 
     else:
+        # ----- generar un par nuevo (comportamiento clásico) -----
         priv_key = ec.generate_private_key(ec.SECP256R1())
         public_bytes = priv_key.public_key().public_bytes(
             serialization.Encoding.PEM,
@@ -41,6 +58,9 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
         )
         print("[INFO] Generando nuevo par de claves (no había claves previas)")
 
+    # ─────────────────────────────────────────────
+    # 3) Cifrar la clave privada con AES-GCM + KDF
+    # ─────────────────────────────────────────────
     salt_pw, salt_pem = os.urandom(16), os.urandom(16)
     hash_pw = PBKDF2HMAC(hashes.SHA256(), 32, salt_pw, 100_000)\
                 .derive(contrasena.encode())
@@ -50,6 +70,9 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     iv = os.urandom(12)
     ciphertext = AESGCM(key_pem).encrypt(iv, private_bytes_origen, None)
 
+    # ─────────────────────────────────────────────
+    # 4) Guardar archivos bajo el *usuario*
+    # ─────────────────────────────────────────────
     os.makedirs("keys", exist_ok=True)
     priv_path = f"keys/{usuario}_private_key.pem"
     pub_path  = f"keys/{usuario}_public_key.pem"
@@ -60,7 +83,29 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     with open(pub_path, "wb") as f:
         f.write(public_bytes)
 
-    return "Usuario creado, claves guardadas, aún falta actualizar usuarios.json"
+    # ─────────────────────────────────────────────
+    # 5) Actualizar usuarios.json
+    # ─────────────────────────────────────────────
+    usuarios = {}
+    if os.path.exists("usuarios.json"):
+        with open("usuarios.json", "r") as f:
+            usuarios = json.load(f)
+
+    usuarios[usuario] = {
+        "device_id":       did,
+        "salt":            base64.b64encode(salt_pw).decode(),
+        "hashed_password": base64.b64encode(hash_pw).decode(),
+        "pem_salt":        base64.b64encode(salt_pem).decode(),
+    }
+
+    with open("usuarios.json", "w") as f:
+        json.dump(usuarios, f, indent=4)
+
+    return (
+        f"Usuario «{usuario}» vinculado al Device-ID {did}\n"
+        f"Clave privada cifrada → {priv_path}\n"
+        f"Clave pública         → {pub_path}"
+    )
 
 
 if __name__ == "__main__":
