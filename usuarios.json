@@ -4,5 +4,11 @@
         "salt": "0SFw5naE6SMDMwRwXy18JA==",
         "hashed_password": "Y9Z6Zzgdjs2G0HEIkpyfWwy1esGKoYXveeQKKwtaeAI=",
         "pem_salt": "LLx7BzQvcYDVBtH1GcNFEg=="
+    },
+    "servidor": {
+        "device_id": "efc8073e-159c-4caf-93bd-f73639d47e5b",
+        "salt": "jCchlb0lN+ZI+VworGRD3w==",
+        "hashed_password": "+mfdQeVg4VTYR+/zqxvzsslwlxPUZOMvobz+oDQFBzA=",
+        "pem_salt": "fLkeMZej4jvwwNZn3Hw/bA=="
     }
 }

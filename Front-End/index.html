@@ -1,31 +1,329 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Smartwatch Seguro</title>
+<!DOCTYPE html> <!-- declara que el documento es HTML5 -->
+<html lang="es"> <!-- inicio del documento HTML con idioma español -->
+<head> <!-- sección de cabecera del documento -->
+  <meta charset="UTF-8" /> <!-- define la codificación de caracteres como UTF-8 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/> <!-- hace el sitio responsive -->
+  <title>Smartwatch con Protocolo Seguro</title> <!-- título que aparece en la pestaña del navegador -->
+
+  <!-- estilos embebidos para el smartwatch -->
+  <style>
+    body {
+      margin: 0; /* elimina el margen por defecto del navegador */
+      font-family: sans-serif; /* usa una fuente sin serifas */
+      background: #111; /* fondo oscuro */
+      color: white; /* texto en color blanco */
+      display: flex; /* usa modelo flexbox para el layout */
+      justify-content: center; /* centra horizontalmente */
+      align-items: center; /* centra verticalmente */
+      height: 100vh; /* altura del 100% del viewport */
+    }
+
+    .watch {
+      width: 320px; /* ancho del smartwatch */
+      height: 360px; /* alto del smartwatch */
+      border-radius: 30px; /* esquinas redondeadas */
+      background: black; /* fondo negro */
+      border: 6px solid #444; /* borde gris oscuro */
+      box-shadow: 0 0 20px #0f0; /* sombra verde alrededor */
+      display: flex; /* layout de tipo flex */
+      flex-direction: column; /* los hijos se colocan en columna */
+      align-items: center; /* centra los hijos horizontalmente */
+      padding: 10px; /* relleno interno */
+      position: relative; /* para posicionar las flechas de navegación */
+      overflow: hidden; /* oculta contenido que se desborda del contenedor */
+    }
+
+    .scroll-area {
+      width: 100%; /* ocupa todo el ancho del contenedor padre */
+      flex-grow: 1; /* se expande para llenar el espacio vertical disponible */
+      display: flex; /* contenedor tipo flex horizontal */
+      transition: transform 0.3s ease-in-out; /* animación de transición entre páginas */
+    }
+
+    .page {
+      width: 100%; /* cada página ocupa todo el ancho */
+      flex-shrink: 0; /* evita que se reduzca su tamaño */
+      display: flex; /* layout flex en columna */
+      flex-direction: column;
+      align-items: center; /* centra horizontalmente */
+      justify-content: center; /* centra verticalmente */
+    }
+
+    input, button {
+      margin: 4px; /* espacio externo entre elementos */
+      padding: 6px; /* espacio interno */
+      border-radius: 5px; /* bordes redondeados */
+      border: none; /* sin bordes visibles */
+      width: 80%; /* ocupa 80% del ancho disponible */
+      text-align: center; /* alinea el texto al centro */
+    }
+
+    button {
+      background: #222; /* fondo oscuro para botones */
+      color: white; /* texto blanco */
+      cursor: pointer; /* cursor tipo puntero al pasar por el botón */
+    }
+
+    button:hover {
+      background: #0f0; /* fondo verde al pasar el mouse */
+      color: black; /* texto en negro */
+    }
+
+    .status {
+      font-size: 0.8em; /* tamaño más pequeño del texto de estado */
+      margin-top: 8px; /* margen superior */
+      text-align: center; /* centra el texto */
+      color: #0f0; /* color verde por defecto */
+    }
+
+    .nav-arrows {
+      position: absolute; /* posición absoluta dentro del contenedor */
+      bottom: 6px; /* a 6 píxeles del borde inferior */
+      width: 100%; /* ocupa todo el ancho */
+      display: flex; /* distribución horizontal */
+      justify-content: space-between; /* espacio entre botones */
+      padding: 0 20px; /* espacio horizontal interno */
+    }
+
+    .pulse-img {
+      width: 100px; /* ancho de la imagen del pulso */
+      display: none; /* oculta la imagen por defecto */
+    }
+
+    .step-count {
+      font-size: 24px; /* tamaño grande para mostrar pasos */
+      margin: 10px; /* espacio alrededor */
+    }
+  </style> <!-- fin de los estilos CSS -->
 </head>
-<body>
-    <h1>Smartwatch Simulado</h1>
-    <nav>
-        <a href="#login">Login</a> |
-        <a href="#pulso">Pulso</a> |
-        <a href="#pasos">Pasos</a>
-    </nav>
-    <section id="login">
-        <h2>Inicio de sesión</h2>
-        <form>
-            <label>Usuario: <input type="text" name="usuario"></label><br>
-            <label>Contraseña: <input type="password" name="contrasena"></label><br>
-            <button type="submit">Iniciar sesión</button>
-        </form>
-    </section>
-    <section id="pulso">
-        <h2>Obtener pulso</h2>
-        <button>Simular envío</button>
-    </section>
-    <section id="pasos">
-        <h2>Sincronizar pasos</h2>
-        <button>Sincronizar</button>
-    </section>
+
+<body> <!-- inicio del contenido del cuerpo del HTML -->
+
+  <div class="watch"> <!-- contenedor principal del smartwatch -->
+
+    <div class="scroll-area" id="scrollArea"> <!-- área de navegación entre pantallas -->
+
+      <!-- Página 0: Inicio de sesión -->
+      <div class="page">
+        <h3>Smartwatch con Protocolo Seguro</h3> <!-- título visible -->
+        <input type="text" id="usuario" placeholder="Usuario" /> <!-- entrada para usuario -->
+        <input type="password" id="contrasena" placeholder="Contraseña" /> <!-- entrada para contraseña -->
+        <button onclick="iniciarSesion()" id="loginBtn">Iniciar sesión</button> <!-- botón para iniciar sesión -->
+        <div class="status" id="estadoInicioSesion">Esperando acción...</div> <!-- estado de inicio de sesión -->
+      </div>
+
+      <!-- Página 1: Pulso -->
+      <div class="page">
+        <button onclick="medirPulso()">Obtener pulso</button> <!-- botón para iniciar medición de pulso -->
+        <img id="pulseImg" src="medicion_pulso.png" class="pulse-img" /> <!-- imagen representando el pulso -->
+        <div class="status" id="statusPulso"></div> <!-- estado del resultado del pulso -->
+      </div>
+
+      <!-- Página 2: Pasos -->
+      <div class="page">
+        <button onclick="enviarPasos()">Enviar pasos</button> <!-- botón para simular pasos -->
+        <div class="step-count" id="contadorPasos">0</div> <!-- número de pasos mostrados -->
+        <div class="status" id="statusPasos"></div> <!-- estado del envío de pasos -->
+      </div>
+
+      <!-- Página 3: Sincronizar -->
+      <div class="page">
+        <button onclick="sincronizarServidor()">Sincronizar</button> <!-- botón para sincronización -->
+        <div class="status" id="statusSync"></div> <!-- estado de sincronización -->
+      </div>
+
+    </div> <!-- fin scroll-area -->
+
+    <!-- Flechas para navegar entre pantallas -->
+    <div class="nav-arrows">
+      <button onclick="cambiarPagina(-1)">⬅️</button> <!-- flecha izquierda -->
+      <button onclick="cambiarPagina(1)">➡️</button> <!-- flecha derecha -->
+    </div>
+
+  </div> <!-- fin del smartwatch -->
+
+  <!-- inicio del script JavaScript -->
+  <script>
+    let paginaActual = 0; // controla qué página está visible
+    let pasos = 0; // contador local de pasos
+    let intervaloPasos = null; // guarda el intervalo de pasos para detenerlo
+    let autenticado = false; // indica si el usuario ha iniciado sesión
+    let pasosValidos = true; // bandera de integridad
+    let pasosSincronizados = 0; // pasos acumulados tras sincronización
+
+    // función para hacer scroll a una página específica
+    function scrollToPage(index) {
+      const scroll = document.getElementById("scrollArea"); // accede al contenedor deslizable
+      const width = scroll.offsetWidth; // obtiene el ancho del contenedor
+      scroll.style.transform = `translateX(-${index * width}px)`; // aplica desplazamiento horizontal
+    }
+
+    // función para cambiar entre páginas (navegación izquierda/derecha)
+    function cambiarPagina(dir) {
+      const total = 4; // número total de páginas
+      paginaActual = (paginaActual + dir + total) % total; // nueva página con módulo para ciclos
+      scrollToPage(paginaActual); // cambia visualmente de página
+
+      // si no es página 0, muestra mensaje de sesión iniciada
+      if (paginaActual !== 0)
+        document.getElementById("estadoInicioSesion").innerHTML = "🔐 Sesión iniciada correctamente";
+    }
+
+    // función para iniciar sesión de forma segura
+    async function iniciarSesion() {
+      const usuario = document.getElementById("usuario").value; // obtiene el usuario
+      const contrasena = document.getElementById("contrasena").value; // obtiene la contraseña
+      const estado = document.getElementById("estadoInicioSesion"); // etiqueta de estado
+
+      try {
+        // convierte la clave AES en binario
+        const claveHex = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
+        const claveBin = new Uint8Array(claveHex.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+
+        // importa la clave en WebCrypto
+        const claveCryptoKey = await crypto.subtle.importKey("raw", claveBin, "AES-GCM", false, ["encrypt"]);
+
+        // genera un nonce aleatorio
+        const nonce = crypto.getRandomValues(new Uint8Array(12));
+        const encoder = new TextEncoder(); // codificador de texto
+        const datos = encoder.encode(contrasena); // convierte contraseña a binario
+
+        // cifra la contraseña
+        const cifradoBin = await crypto.subtle.encrypt(
+          { name: "AES-GCM", iv: nonce },
+          claveCryptoKey,
+          datos
+        );
+
+        // convierte a base64 para envío
+        const nonce64 = btoa(String.fromCharCode(...nonce));
+        const cifrado64 = btoa(String.fromCharCode(...new Uint8Array(cifradoBin)));
+
+        // petición POST al servidor
+        const res = await fetch("http://localhost:5000/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usuario, nonce: nonce64, cifrado: cifrado64 }),
+        });
+
+        const data = await res.json(); // respuesta del servidor
+
+        // muestra el resultado en el estado
+        if (data.success) {
+          autenticado = true;
+          document.getElementById("loginBtn").style.display = "none";
+          estado.innerHTML = `<strong>Autenticación mutua completada</strong>`;
+          estado.style.color = "#0f0";
+        } else if (data.error && data.error === "InvalidTag") {
+          estado.textContent = "Integridad comprometida: mensaje alterado";
+          estado.style.color = "red";
+        } else if (data.error === "Contraseña incorrecta") {
+          estado.textContent = "Credenciales incorrectas";
+          estado.style.color = "orange";
+        } else if (data.error === "Usuario no encontrado") {
+          estado.textContent = "Usuario no encontrado";
+          estado.style.color = "orange";
+        } else {
+          estado.textContent = "Credenciales incorrectas";
+          estado.style.color = "red";
+        }
+
+      } catch (e) {
+        estado.textContent = "Error de conexión con servidor";
+        estado.style.color = "red";
+      }
+    }
+
+    // función para medir el pulso y enviarlo al servidor
+    function medirPulso() {
+      if (!autenticado) return alert("Inicia sesión primero");
+      const img = document.getElementById("pulseImg");
+      const status = document.getElementById("statusPulso");
+      img.style.display = "block";
+      status.textContent = "Midiendo pulso...";
+
+      const delay = 10000 + Math.random() * 5000; // simula un retraso de lectura
+      setTimeout(async () => {
+        const bpm = Math.floor(65 + Math.random() * 20); // genera un pulso aleatorio
+        img.style.display = "none";
+
+        const res = await fetch("http://localhost:5000/pulso", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensaje: `${bpm}` }),
+        });
+
+        const datos = await res.json();
+        if (datos.error === "InvalidTag") {
+          status.innerHTML = "Integridad comprometida: el mensaje fue alterado";
+          status.style.color = "red";
+          return;
+        }
+
+        status.innerHTML = `Pulso: ${datos.mensaje_original} bpm<br>`;
+        status.style.color = "#0f0";
+      }, delay);
+    }
+
+    // función para enviar pasos simulados al servidor
+    function enviarPasos() {
+      if (!autenticado) return alert("Inicia sesión primero");
+      pasos = 0;
+      const contador = document.getElementById("contadorPasos");
+      const status = document.getElementById("statusPasos");
+      status.textContent = "⌛ Enviando pasos...";
+
+      intervaloPasos = setInterval(async () => {
+        pasos += Math.floor(Math.random() * 8 + 1);
+        contador.textContent = pasos;
+
+        const res = await fetch("http://localhost:5000/pasos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensaje: `${pasos}` }),
+        });
+
+        const datos = await res.json();
+        if (datos.error === "InvalidTag") {
+          pasosValidos = false;
+          pasos = 0;
+          clearInterval(intervaloPasos);
+          contador.textContent = pasos;
+          status.innerHTML = "Integridad comprometida: pasos alterados";
+          status.style.color = "red";
+          return;
+        }
+
+        pasosValidos = true;
+        status.innerHTML = `Pasos: ${datos.mensaje_original}<br>`;
+        status.style.color = "#0f0";
+      }, 4000);
+    }
+
+    // función para sincronizar los pasos al servidor
+    function sincronizarServidor() {
+      if (!autenticado) return alert("Inicia sesión primero");
+
+      const status = document.getElementById("statusSync");
+
+      if (!pasosValidos) {
+        status.innerHTML = `No se puede sincronizar: los pasos fueron alterados<br>`;
+        status.style.color = "red";
+        return;
+      }
+
+      clearInterval(intervaloPasos);
+      pasosSincronizados += pasos;
+      const calorias = Math.round(pasosSincronizados * 0.04);
+      status.innerHTML = `Pasos: ${pasosSincronizados}, Calorías: ${calorias}<br>Sincronización exitosa`;
+      status.style.color = "#0f0";
+
+      pasos = 0;
+      document.getElementById("contadorPasos").textContent = pasos;
+    }
+
+    // al cargar la página, muestra la primera pantalla
+    window.onload = () => scrollToPage(0);
+  </script> <!-- fin del script -->
 </body>
 </html>
