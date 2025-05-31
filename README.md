@@ -12,13 +12,13 @@ La interfaz web representa el smartwatch, y todo el backend está hecho en Pytho
 
 En este proyecto se demuestra:
 
-**Autenticación Mutua**  
+- **Autenticación Mutua**  
 Ambos (cliente y servidor) prueban que son quienes dicen ser, firmando nonces únicos con ECDSA.
 
-**Confidencialidad**  
+- **Confidencialidad**  
 Toda contraseña o dato enviado (como el pulso o pasos) viaja cifrado con AES-GCM.
 
-**Integridad**  
+- **Integridad**  
 Si alguien modifica el mensaje, el servidor lo detecta de inmediato y se muestra un error (InvalidTag).
 
 ## Archivos principales
