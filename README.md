@@ -1,10 +1,10 @@
 # Protocolo de Comunicación Seguro para un dispositivo con bajos recursos computacionales
 
 Equipo:
-González Gutierrez Adrián Sebastían
-Ornelas Garduño Alexis Johan
-Ramírez Bartolo Ignacio
-Ramírez Santamaría Carlos Isaac
+- González Gutierrez Adrián Sebastían
+- Ornelas Garduño Alexis Johan
+- Ramírez Bartolo Ignacio
+- Ramírez Santamaría Carlos Isaac
 
 Este proyecto simula un reloj inteligente (smartwatch) con bajos recursos computacionales que se comunica con un servidor confiable usando un protocolo de seguridad completo creado por el equipo que plantea cumplir con las siguiente propiedades: autenticación, confidencialidad e integridad.
 
