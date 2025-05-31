@@ -52,13 +52,13 @@ def login():
         aesgcm = AESGCM(clave_bin)
 
         # convierte el mensaje cifrado en un arreglo de bytes para simular corrupción
-        cifrado_corrupto = bytearray(cifrado)
+        #cifrado_corrupto = bytearray(cifrado)
 
         # altera el último byte del mensaje cifrado
-        cifrado_corrupto[-1] ^= 0x01
+        #cifrado_corrupto[-1] ^= 0x01
 
         # lo convierte de nuevo a bytes
-        cifrado = bytes(cifrado_corrupto)
+        #cifrado = bytes(cifrado_corrupto)
 
         # intenta descifrar la contraseña
         try:
@@ -126,13 +126,13 @@ def cifrar_pulso():
         cifrado = aesgcm.encrypt(nonce, mensaje.encode(), None)
 
         # convierte el mensaje cifrado en arreglo para simular corrupción
-        cifrado_corrupto = bytearray(cifrado)
+        #cifrado_corrupto = bytearray(cifrado)
 
         # altera el último byte
-        cifrado_corrupto[-1] ^= 0x01
+        #cifrado_corrupto[-1] ^= 0x01
 
         # lo convierte de nuevo a bytes
-        cifrado = bytes(cifrado_corrupto)
+        #cifrado = bytes(cifrado_corrupto)
 
         # intenta descifrar el mensaje para comprobar la integridad
         try:
@@ -187,9 +187,9 @@ def cifrar_pasos():
         cifrado = aesgcm.encrypt(nonce, mensaje.encode(), None)
 
         # altera el mensaje cifrado para simular corrupción
-        cifrado_corrupto = bytearray(cifrado)
-        cifrado_corrupto[-1] ^= 0x01
-        cifrado = bytes(cifrado_corrupto)
+        #cifrado_corrupto = bytearray(cifrado)
+        #cifrado_corrupto[-1] ^= 0x01
+        #cifrado = bytes(cifrado_corrupto)
 
         # imprime los datos cifrados en consola para demostrar confidencialidad
         print("[PASOS] Texto original:", mensaje)

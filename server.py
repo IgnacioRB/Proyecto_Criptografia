@@ -14,7 +14,6 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.exceptions import InvalidTag  # excepción para errores de integridad
 
-# ────────────────────────────────────────────────
 def autenticar_dispositivo_para_api(device_id: str):
     """Versión reducida para la demo REST: solo comprueba que exista la clave pública."""
     try:
@@ -54,11 +53,10 @@ def autenticar_dispositivo_para_api(device_id: str):
 
     except Exception as e:
         return {"error": str(e)}  # si ocurre error, se devuelve en JSON
-# ────────────────────────────────────────────────
 
-# ── ejecuta solo si se corre directamente (no si se importa) ──
+# ejecuta solo si se corre directamente (no si se importa)
 if __name__ == "__main__":
-    # ── credenciales del operador ─────────────────────────
+    # redenciales del servidor
     usuario = input("[Servidor] Nombre del servidor: ")  # solicita nombre
     password = getpass("[Servidor] Contraseña: ")  # solicita contraseña oculta
 
@@ -75,7 +73,7 @@ if __name__ == "__main__":
     except Exception as e:
         print("Error al abrir la clave privada:", e); exit()
 
-    # ── configuración del servidor TCP ───────────────────────
+    # configuración del servidor TCP
     HOST, PORT = "127.0.0.1", 65432  # dirección y puerto local
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # crea socket TCP
         s.bind((HOST, PORT))  # vincula IP y puerto
@@ -87,7 +85,7 @@ if __name__ == "__main__":
             with conn:  # gestiona conexión con cliente
                 print("[Servidor] Conexión de", addr)
 
-                # ── Fase 1: recibir device-id del cliente ───────────────
+                # Fase 1: recibir device-id del cliente
                 device_id = conn.recv(1024).decode().strip()  # recibe y decodifica el ID
                 cli_pub_path = f"keys/{device_id}_public_key.pem"  # ruta a clave pública del cliente
                 if not os.path.exists(cli_pub_path):  # si no existe, ignora
@@ -96,7 +94,7 @@ if __name__ == "__main__":
                 with open(cli_pub_path, "rb") as f:  # abre y carga la clave pública
                     cli_pub = serialization.load_pem_public_key(f.read())
 
-                # ── Fase 2: autenticación mutua ─────────────────────────
+                # Fase 2: autenticación mutua
                 nonce_srv = uuid.uuid4().bytes  # genera nonce del servidor
                 conn.sendall(nonce_srv)  # envía el nonce al cliente
 
@@ -107,7 +105,7 @@ if __name__ == "__main__":
                 firma_srv = priv_srv.sign(nonce_cli, ec.ECDSA(hashes.SHA256()))  # firma con clave del servidor
                 conn.sendall(firma_srv)  # envía la firma
 
-                # ── Fase 3: ECDH efímero ───────────────────────────────
+                # Fase 3: ECDH efímero
                 srv_tmp_priv = ec.generate_private_key(ec.SECP256R1())  # clave efímera del servidor
                 srv_pub_bytes = srv_tmp_priv.public_key().public_bytes(  # convierte a PEM
                     encoding=serialization.Encoding.PEM,
@@ -126,7 +124,7 @@ if __name__ == "__main__":
                 aesgcm = AESGCM(aes_key)  # instancia objeto para cifrado
                 print("  · Canal seguro establecido.")
 
-                # ── Fase 4: recibir mensaje cifrado y responder ─────────
+                # Fase 4: recibir mensaje cifrado y responder
                 try:
                     conn.settimeout(2.0)  # define tiempo límite de espera
                     data = conn.recv(2048)  # recibe datos cifrados
@@ -136,9 +134,9 @@ if __name__ == "__main__":
                     print("[DEBUG] Corrompiendo ciphertext para simular ataque...")
 
                     # --- simula corrupción del mensaje para probar la integridad
-                    corrupt_ctxt = bytearray(ctxt)
-                    corrupt_ctxt[-1] ^= 0x01  # altera el último byte
-                    ctxt = bytes(corrupt_ctxt)
+                    #corrupt_ctxt = bytearray(ctxt)
+                    #corrupt_ctxt[-1] ^= 0x01  # altera el último byte
+                    #ctxt = bytes(corrupt_ctxt)
 
                     msg = aesgcm.decrypt(nonce_m, ctxt, None)  # intenta descifrar
                     print("  · Mensaje:", msg.decode(errors="ignore"))  # imprime mensaje

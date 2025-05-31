@@ -18,14 +18,10 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     asociadas al device_id, se reutilizan en lugar de generar nuevas.
     """
     
-    # ─────────────────────────────────────────────
     # 1) Device-ID: recibido manualmente o generado automáticamente
-    # ─────────────────────────────────────────────
     did = device_id.strip() if device_id else str(uuid.uuid4())
 
-    # ─────────────────────────────────────────────
     # 2) Verifica si ya existen claves asociadas al device_id
-    # ─────────────────────────────────────────────
     private_src = f"keys/{did}_private_key.pem"
     public_src  = f"keys/{did}_public_key.pem"
 
@@ -65,10 +61,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
 
         print("[INFO] Generando nuevo par de claves (no había claves previas)")
 
-    # ─────────────────────────────────────────────
-    # 3) Cifra la clave privada usando AES-GCM y PBKDF2-HMAC
-    # ─────────────────────────────────────────────
-    
+    # 3) Cifra la clave privada usando AES-GCM y PBKDF2-HMAC    
     # genera dos valores aleatorios de 16 bytes para las sales
     salt_pw, salt_pem = os.urandom(16), os.urandom(16)
 
@@ -86,9 +79,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     # cifra la clave privada sin cifrar con AES-GCM
     ciphertext = AESGCM(key_pem).encrypt(iv, private_bytes_origen, None)
 
-    # ─────────────────────────────────────────────
     # 4) Guarda las claves cifradas y públicas en archivos
-    # ─────────────────────────────────────────────
     os.makedirs("keys", exist_ok=True)  # crea el directorio si no existe
 
     priv_path = f"keys/{usuario}_private_key.pem"  # ruta para clave privada cifrada
@@ -102,10 +93,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     with open(pub_path, "wb") as f:
         f.write(public_bytes)
 
-    # ─────────────────────────────────────────────
     # 5) Actualiza el archivo usuarios.json
-    # ─────────────────────────────────────────────
-
     usuarios = {}  # inicializa el diccionario de usuarios
 
     # si ya existe el archivo, lo carga
@@ -133,7 +121,7 @@ def crear_usuario(usuario: str, contrasena: str, device_id: str | None = None,
     )
 
 
-# ──────────────────────────── EJECUCIÓN DIRECTA ────────────────────────────
+# EJECUCIÓN DIRECTA
 if __name__ == "__main__":
     # solicita el nombre de usuario desde consola
     usr  = input("Nombre de usuario: ").strip()

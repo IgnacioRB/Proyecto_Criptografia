@@ -1,4 +1,4 @@
-# cliente.py – smartwatch / nodo IoT que se autentica con el servidor
+# cliente.py – simulación del smartwatch que se autentica con el servidor
 
 # importa librerías estándar necesarias
 import socket, os, uuid
@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-# ──────────────────────────── 1) CREDENCIALES ───────────────────────────
+# 1) CREDENCIALES
 
 # solicita el nombre del usuario/dispositivo
 usuario = input("[Cliente] Nombre de usuario/dispositivo: ")
@@ -42,7 +42,7 @@ except Exception as e:
     # si ocurre un error, termina el programa
     print("Error al abrir la clave privada:", e); exit()
 
-# ──────────────────────────── 2) CLAVE PÚBLICA DEL SERVIDOR ─────────────
+# 2) CLAVE PÚBLICA DEL SERVIDOR
 
 # carga los datos del usuario "servidor"
 srv_data = cargar_usuario("servidor")
@@ -54,7 +54,7 @@ srv_dev_id = srv_data["device_id"]
 with open(f"keys/{srv_dev_id}_public_key.pem", "rb") as f:
     srv_pub_key = serialization.load_pem_public_key(f.read())
 
-# ──────────────────────────── 3) CONEXIÓN TCP ───────────────────────────
+# 3) CONEXIÓN TCP
 
 # dirección y puerto del servidor
 HOST, PORT = "127.0.0.1", 65432
@@ -81,7 +81,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     srv_pub_key.verify(firma_srv, nonce_cli, ec.ECDSA(hashes.SHA256()))
     print("✓  Autenticación mutua completa")
 
-    # ───────────────────── 4) ECDH EFÍMERO / CLAVE AES ──────────────────
+    # 4) ECDH EFÍMERO / CLAVE AES
 
     # genera clave privada efímera para ECDH
     cli_tmp_priv = ec.generate_private_key(ec.SECP256R1())
@@ -113,7 +113,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     aesgcm = AESGCM(aes_key)
     print("✓  Clave compartida derivada, canal seguro listo")
 
-    # ───────────────────── 5) MENSAJE CIFRADO ───────────────────────────
+    # 5) MENSAJE CIFRADO
 
     # construye un mensaje aleatorio concatenado con saludo
     mensaje = uuid.uuid4().bytes + b"||Hola servidor!!"
@@ -127,7 +127,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     # muestra longitud del mensaje cifrado
     print("[DEBUG] Longitud ciphertext:", len(ciphertext))
 
-    # --------- DESCOMENTA LAS 2 LÍNEAS SIGUIENTES PARA PROBAR INTEGRIDAD ----
+    # -------- DESCOMENTAR LAS 2 LÍNEAS SIGUIENTES PARA PROBAR INTEGRIDAD ----
     #corrupt = bytearray(ciphertext); corrupt[0] ^= 0x01
     #ciphertext = bytes(corrupt)
     # ------------------------------------------------------------------------
@@ -135,7 +135,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     # envía el nonce y el ciphertext al servidor
     s.sendall(nonce_msg + ciphertext)
 
-    # ───────────────────── 6) RESPUESTA DEL SERVIDOR ────────────────────────
+    # 6) RESPUESTA DEL SERVIDOR
 
     # espera respuesta del servidor
     data = s.recv(2048)

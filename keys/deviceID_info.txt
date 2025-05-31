@@ -1,0 +1,3 @@
+Device ID: 016bf5c4-7188-4823-b551-328f4c6ac600
+Llave privada: keys\016bf5c4-7188-4823-b551-328f4c6ac600_private_key.pem
+Llave pública: keys\016bf5c4-7188-4823-b551-328f4c6ac600_public_key.pem

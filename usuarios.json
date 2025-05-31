@@ -1,14 +1,14 @@
 {
     "ignacio": {
-        "device_id": "a0d1a9d5-9881-44cc-8dc0-e99480a35900",
-        "salt": "0SFw5naE6SMDMwRwXy18JA==",
-        "hashed_password": "Y9Z6Zzgdjs2G0HEIkpyfWwy1esGKoYXveeQKKwtaeAI=",
-        "pem_salt": "LLx7BzQvcYDVBtH1GcNFEg=="
+        "device_id": "016bf5c4-7188-4823-b551-328f4c6ac600",
+        "salt": "CXOgREzaUt4CS18cbdiMxQ==",
+        "hashed_password": "v7ebS1GH7GXcyrkzostN9A23QgJ53VsQfhWJ47fBoAA=",
+        "pem_salt": "+1F7EM5uuEd5bICKZSiaqg=="
     },
     "servidor": {
-        "device_id": "efc8073e-159c-4caf-93bd-f73639d47e5b",
-        "salt": "jCchlb0lN+ZI+VworGRD3w==",
-        "hashed_password": "+mfdQeVg4VTYR+/zqxvzsslwlxPUZOMvobz+oDQFBzA=",
-        "pem_salt": "fLkeMZej4jvwwNZn3Hw/bA=="
+        "device_id": "016bf5c4-7188-4823-b551-328f4c6ac600",
+        "salt": "e6iPR/KczQnO5DTFeDSibg==",
+        "hashed_password": "xoehc2zl66MeljDX4VjkkmdLUdXz8xE1xK+N4+CgKk0=",
+        "pem_salt": "Mjf2i17ppnVi6Z5/D7l/Ow=="
     }
 }

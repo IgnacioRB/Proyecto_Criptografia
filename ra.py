@@ -1,4 +1,4 @@
-# importar módulos necesarios
+# ra.py  – simulación de la autoridad de registro
 import os  # para manejar rutas y crear carpetas
 import uuid  # para generar un identificador único para el dispositivo
 from cryptography.hazmat.primitives.asymmetric import ec  # para generar claves ECC
