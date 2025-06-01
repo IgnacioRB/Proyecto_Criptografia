@@ -32,6 +32,14 @@ Si alguien modifica el mensaje, el servidor lo detecta de inmediato y se muestra
 
 También incluye el directorio `keys/` donde se guardan las llaves de los usuarios y el archivo `usuarios.json` con sus datos.
 
+## Credenciales
+Para el cliente:
+- Usuario: ignacio
+- Contraseña: contrasena123
+
+Para el servidor:
+- Usuario: servidor
+- Contraseña: servidor123
 
 ## ¿Qué se necesita para correrlo?
 
